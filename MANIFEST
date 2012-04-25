@@ -1,0 +1,11 @@
+Changes
+LICENSE
+MANIFEST
+META.yml
+Makefile.PL
+README
+bin/fix-pg-dump-acls
+lib/HTGT/Admin/Utils.pm
+t/00-compile.t
+t/release-no-smart-comments.t
+t/release-package-names.t
