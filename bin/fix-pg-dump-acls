@@ -1,0 +1,48 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings FATAL => 'all';
+
+use Getopt::Long;
+
+my %role_name_map;
+
+sub role_name_for {
+    my $role = shift;
+    return $role_name_map{$role} || $role;
+}
+
+GetOptions(
+    'role=s%', => \%role_name_map
+);
+
+while ( <> ) {
+    s/(?<=\sTO\s)([^\s;]+)/role_name_for($1)/eg;
+    s/(?<=\sFROM\s)([^\s;]+)/role_name_for($1)/eg;
+    print;
+}
+
+=pod
+
+=head1 NAME
+
+fix-pg-dump-acls
+
+=head1 SYNOPSIS
+
+  fix-pg-dump-acls --role eng_seq_admin=eng_seq_devel_admin \
+    --role eng_seq_ro=eng_seq_devel_ro \
+    --role eng_seq_rw=eng_seq_devel_rw eng_seq.dump
+
+=head1 DESCRIPTION
+
+This script processes a PostgreSQL dump created by C<pg_dump --format=plain>
+and modifies the role names in the ACLs according to the map specified
+in C<--role> options on the command-line.
+
+It is useful if you are restoring a dump to a database with different
+admin/read/write roles from the originating database.
+
+=head1 AUTHOR
+
+Ray Miller E<lt>rm7@sanger.ac.ukE<gt>
