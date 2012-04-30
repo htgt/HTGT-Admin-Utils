@@ -22,16 +22,21 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "HTGT-Admin-Utils",
   "EXE_FILES" => [
-    "bin/fix-pg-dump-acls"
+    "bin/fix-pg-dump-acls",
+    "bin/generate-pg-audit-ddl"
   ],
   "LICENSE" => "perl",
   "NAME" => "HTGT::Admin::Utils",
   "PREREQ_PM" => {
+    "Const::Fast" => 0,
+    "DBI" => 0,
     "Getopt::Long" => 0,
+    "Template" => 0,
+    "Term::ReadPassword" => 0,
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.001",
+  "VERSION" => "0.002",
   "test" => {
     "TESTS" => "t/*.t"
   }

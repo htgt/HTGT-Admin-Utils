@@ -5,6 +5,7 @@ META.yml
 Makefile.PL
 README
 bin/fix-pg-dump-acls
+bin/generate-pg-audit-ddl
 lib/HTGT/Admin/Utils.pm
 t/00-compile.t
 t/release-no-smart-comments.t
