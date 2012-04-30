@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+0.002     2012-04-30 15:35:06 Europe/London
+
+        Add generate-pg-audit-ddl script.
+
 0.001     2012-04-25 16:08:49 Europe/London
 
         Initial release.
