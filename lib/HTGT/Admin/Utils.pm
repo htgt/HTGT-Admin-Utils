@@ -1,8 +1,5 @@
-## no critic(RequireExplicitPackage)
+package HTGT::Admin::Utils;
 use strict;
 use warnings;
-## use critic
-
-package HTGT::Admin::Utils;
 
 1;
