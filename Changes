@@ -1,3 +1,7 @@
+0.004     2012-05-01 16:05:56 Europe/London
+
+	Rebuild with new Dist::Zilla::PluginBundle::Author::HTGT.
+
 0.003     2012-05-01 13:42:01 Europe/London
 
         Address Perl::Critic issues.
