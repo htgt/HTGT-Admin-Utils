@@ -8,5 +8,6 @@ bin/fix-pg-dump-acls
 bin/generate-pg-audit-ddl
 lib/HTGT/Admin/Utils.pm
 t/00-compile.t
+t/author-critic.t
+t/author-test-eol.t
 t/release-no-smart-comments.t
-t/release-package-names.t

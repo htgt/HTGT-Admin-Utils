@@ -12,11 +12,9 @@ sub role_name_for {
     return $role_name_map{$role} || $role;
 }
 
-GetOptions(
-    'role=s%', => \%role_name_map
-);
+GetOptions( 'role=s%', => \%role_name_map );
 
-while ( <> ) {
+while (<>) {
     s/(?<=\sTO\s)([^\s;]+)/role_name_for($1)/eg;
     s/(?<=\sFROM\s)([^\s;]+)/role_name_for($1)/eg;
     print;

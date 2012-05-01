@@ -63,72 +63,75 @@ const my %IS_AUDIT_COL => map { $_ => 1 } qw( audit_op audit_user audit_stamp au
 
 const my %NEEDS_SIZE => map { $_ => 1 } qw( char character varchar );
 
-my $pg_host   = $ENV{PGHOST};
-my $pg_port   = $ENV{PGPORT};
-my $pg_dbname = $ENV{PGDATABASE};
-my $pg_role;
+{
 
-GetOptions(
-    'host=s'    => \$pg_host,
-    'port=s'    => \$pg_port,
-    'dbname=s'  => \$pg_dbname,
-    'role=s'    => \$pg_role
-) or die "Usage: $0 [OPTIONS]\n";
+    my $pg_host   = $ENV{PGHOST};
+    my $pg_port   = $ENV{PGPORT};
+    my $pg_dbname = $ENV{PGDATABASE};
+    my $pg_role;
 
-$pg_role ||= $pg_dbname . '_ro';
+    GetOptions(
+        'host=s'   => \$pg_host,
+        'port=s'   => \$pg_port,
+        'dbname=s' => \$pg_dbname,
+        'role=s'   => \$pg_role
+    ) or die "Usage: $0 [OPTIONS]\n";
 
-my $pg_password;
-while( not defined $pg_password ) {
-    $pg_password = read_password( "Enter PostgreSQL password for $ENV{USER}: " );
-}
+    $pg_role ||= $pg_dbname . '_ro';
 
-my $dsn = 'dbi:Pg:dbname=' . $pg_dbname;
-
-if ( defined $pg_host ) {
-    $dsn .= ";host=" . $pg_host;
-}
-
-if ( defined $pg_port ) {
-    $dsn .= ";port=" . $pg_port;
-}
-
-my $dbh = DBI->connect( $dsn, $ENV{USER}, $pg_password, { AutoCommit => 1, RaiseError => 1, PrintError => 0 } )
-    or die "Failed to connect to $dsn: $DBI::errstr\n";
-
-$dbh->do( 'SET SESSION ROLE ' . $dbh->quote_identifier( $pg_role ) );
-
-const my %VARS => (
-    main_schema  => $MAIN_SCHEMA,
-    audit_schema => $AUDIT_SCHEMA,
-    ro_role      => $pg_dbname . '_ro',
-    rw_role      => $pg_dbname . '_rw'
-);
-
-my $tt = Template->new;
-
-my $main_tables   = get_tables( $dbh, $MAIN_SCHEMA );
-my $audit_tables  = get_tables( $dbh, $AUDIT_SCHEMA );
-
-while ( my ( $table_name, $main_table ) = each %{ $main_tables } ) {
-    my $audit_table = $audit_tables->{$table_name};
-    if ( $audit_table ) {
-        diff_tables( $table_name, $main_table, $audit_table );
+    my $pg_password;
+    while ( not defined $pg_password ) {
+        $pg_password = read_password("Enter PostgreSQL password for $ENV{USER}: ");
     }
-    else {
-        initialize_auditing( $table_name, $main_table );
-    }
-}
 
-for my $table_name ( keys %{$audit_tables} ) {
-    unless ( $main_tables->{$table_name} ) {
-        $tt->process( \$DROP_AUDIT_TABLE_TT, { %VARS, table_name => $table_name } );
+    my $dsn = 'dbi:Pg:dbname=' . $pg_dbname;
+
+    if ( defined $pg_host ) {
+        $dsn .= ";host=" . $pg_host;
+    }
+
+    if ( defined $pg_port ) {
+        $dsn .= ";port=" . $pg_port;
+    }
+
+    my $dbh = DBI->connect( $dsn, $ENV{USER}, $pg_password, { AutoCommit => 1, RaiseError => 1, PrintError => 0 } )
+        or die "Failed to connect to $dsn: $DBI::errstr\n";
+
+    $dbh->do( 'SET SESSION ROLE ' . $dbh->quote_identifier($pg_role) );
+
+    const my %VARS => (
+        main_schema  => $MAIN_SCHEMA,
+        audit_schema => $AUDIT_SCHEMA,
+        ro_role      => $pg_dbname . '_ro',
+        rw_role      => $pg_dbname . '_rw'
+    );
+
+    my $tt = Template->new;
+
+    my $main_tables  = get_tables( $dbh, $MAIN_SCHEMA );
+    my $audit_tables = get_tables( $dbh, $AUDIT_SCHEMA );
+
+    while ( my ( $table_name, $main_table ) = each %{$main_tables} ) {
+        my $audit_table = $audit_tables->{$table_name};
+        if ($audit_table) {
+            diff_tables( $table_name, $main_table, $audit_table, $tt, \%VARS );
+        }
+        else {
+            initialize_auditing( $table_name, $main_table, $tt, \%VARS );
+        }
+    }
+
+    for my $table_name ( keys %{$audit_tables} ) {
+        unless ( $main_tables->{$table_name} ) {
+            $tt->process( \$DROP_AUDIT_TABLE_TT, { %VARS, table_name => $table_name } );
+        }
     }
 }
 
 sub diff_tables {
-    my ( $table_name, $col_spec, $audit_col_spec ) = @_;
+    my ( $table_name, $col_spec, $audit_col_spec, $tt, $VARS ) = @_;
 
-    my %vars = ( %VARS, table_name => $table_name );
+    my %vars = ( %{$VARS}, table_name => $table_name );
 
     my %cols       = map { @{$_} } @{$col_spec};
     my %audit_cols = map { @{$_} } @{$audit_col_spec};
@@ -136,14 +139,15 @@ sub diff_tables {
     for my $cs ( @{$col_spec} ) {
         my ( $column_name, $column_type ) = @{$cs};
         my $audit_column_type = $audit_cols{$column_name};
-        if ( $audit_column_type ) {
+        if ($audit_column_type) {
             if ( $audit_column_type ne $column_type ) {
                 warn "Table $table_name column $column_name type mismatch ($column_type vs $audit_column_type)\n";
             }
         }
         else {
-            $tt->process( \$ADD_AUDIT_TABLE_COLUMN_TT, { %vars, column_name => $column_name, column_type => $column_type } );
-        }        
+            $tt->process( \$ADD_AUDIT_TABLE_COLUMN_TT,
+                { %vars, column_name => $column_name, column_type => $column_type } );
+        }
     }
 
     for my $audit_column_name ( keys %audit_cols ) {
@@ -151,13 +155,15 @@ sub diff_tables {
             $tt->process( \$DROP_AUDIT_TABLE_COLUMN_TT, { %vars, column_name => $audit_column_name } );
         }
     }
+
+    return;
 }
 
 sub initialize_auditing {
-    my ( $table_name, $col_spec ) = @_;
+    my ( $table_name, $col_spec, $tt, $VARS ) = @_;
 
     my %vars = (
-        %VARS,
+        %{$VARS},
         table_name  => $table_name,
         column_spec => [ map { join q{ }, @{$_} } @{$col_spec} ]
     );
@@ -165,17 +171,19 @@ sub initialize_auditing {
     $tt->process( \$CREATE_AUDIT_TABLE_TT,    \%vars );
     $tt->process( \$CREATE_AUDIT_FUNCTION_TT, \%vars );
     $tt->process( \$CREATE_AUDIT_TRIGGER_TT,  \%vars );
+
+    return;
 }
 
 sub get_tables {
     my ( $dbh, $schema_name ) = @_;
 
     my $sth = $dbh->table_info( undef, $schema_name, undef, 'TABLE' );
-    
+
     my %tables;
-    
+
     while ( my $r = $sth->fetchrow_hashref ) {
-        $tables{ $r->{TABLE_NAME} } = get_column_info( $dbh, $schema_name, $r->{TABLE_NAME} );        
+        $tables{ $r->{TABLE_NAME} } = get_column_info( $dbh, $schema_name, $r->{TABLE_NAME} );
     }
 
     return \%tables;
@@ -185,14 +193,14 @@ sub get_column_info {
     my ( $dbh, $schema_name, $table_name ) = @_;
 
     my @column_info;
-    
+
     my $sth = $dbh->column_info( undef, $schema_name, $table_name, undef );
     while ( my $r = $sth->fetchrow_hashref ) {
         my $type = $r->{TYPE_NAME};
         if ( exists $NEEDS_SIZE{$type} ) {
             $type = $type . '(' . $r->{COLUMN_SIZE} . ')';
-        }        
-        push @column_info, [ $r->{COLUMN_NAME}, $type ];        
+        }
+        push @column_info, [ $r->{COLUMN_NAME}, $type ];
     }
 
     return \@column_info;
