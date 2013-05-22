@@ -1,3 +1,7 @@
+0.005     2013-05-22 13:24:52 Europe/London
+
+    Add hash of tables we want to ignore when creating audit ddl
+
 0.004     2012-05-01 16:05:56 Europe/London
 
 	Rebuild with new Dist::Zilla::PluginBundle::Author::HTGT.

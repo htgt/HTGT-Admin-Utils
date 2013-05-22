@@ -10,6 +10,12 @@ use Term::ReadPassword;
 use Template;
 use Getopt::Long;
 
+const my %IGNORE_TABLE => (
+    cached_reports     => 1,
+    crispr_off_targets => 1,
+    summaries          => 1,
+);
+
 const my $MAIN_SCHEMA  => 'public';
 const my $AUDIT_SCHEMA => 'audit';
 
@@ -112,6 +118,7 @@ const my %NEEDS_SIZE => map { $_ => 1 } qw( char character varchar );
     my $audit_tables = get_tables( $dbh, $AUDIT_SCHEMA );
 
     while ( my ( $table_name, $main_table ) = each %{$main_tables} ) {
+        next if exists $IGNORE_TABLE{$table_name};
         my $audit_table = $audit_tables->{$table_name};
         if ($audit_table) {
             diff_tables( $table_name, $main_table, $audit_table, $tt, \%VARS );
