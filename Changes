@@ -1,3 +1,7 @@
+0.006     2013-05-28 08:45:16 Europe/London
+
+    Add fixture_md5 table to list of tables to ignore in audit sql creation
+
 0.005     2013-05-22 13:24:52 Europe/London
 
     Add hash of tables we want to ignore when creating audit ddl

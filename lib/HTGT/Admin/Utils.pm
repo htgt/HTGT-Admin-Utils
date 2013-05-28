@@ -1,7 +1,7 @@
 package HTGT::Admin::Utils;
 ## no critic(RequireUseStrict,RequireUseWarnings)
 {
-    $HTGT::Admin::Utils::VERSION = '0.005';
+    $HTGT::Admin::Utils::VERSION = '0.006';
 }
 ## use critic
 
