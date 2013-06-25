@@ -11,10 +11,11 @@ use Template;
 use Getopt::Long;
 
 const my %IGNORE_TABLE => (
-    cached_reports     => 1,
-    crispr_off_targets => 1,
-    summaries          => 1,
-    fixture_md5        => 1,
+    cached_reports              => 1,
+    crispr_off_targets          => 1,
+    summaries                   => 1,
+    fixture_md5                 => 1,
+    crispr_off_target_summaries => 1,
 );
 
 const my $MAIN_SCHEMA  => 'public';
